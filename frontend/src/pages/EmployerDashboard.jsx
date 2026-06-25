@@ -414,10 +414,9 @@ const EmployerDashboard = () => {
                                             <div style={{ marginTop: '15px', padding: '15px', borderTop: '1px solid #eee', backgroundColor: '#F1F3F5', borderRadius: '4px' }}>
                                                 <h5 style={{ margin: '0 0 10px 0', color: '#495057' }}>Резюме соискателя (ID: {app.resume_id})</h5>
                                                 {!resumeData ? (
-                                                    <p style={{ fontSize: '13px', color: '#666', italic: 'true' }}>Загрузка данных резюме...</p>
+                                                    <p style={{ fontSize: '13px', color: '#666', fontStyle: 'italic' }}>Загрузка данных резюме...</p>
                                                 ) : (
                                                     <div style={{ backgroundColor: '#fff', padding: '15px', borderRadius: '4px', border: '1px solid #dee2e6' }}>
-                                                        {/* Меняй поля ниже на те, которые реально есть в твоей таблице Resumes */}
                                                         <p style={{ margin: '0 0 8px 0' }}><b>Желаемая должность:</b> {resumeData.title || 'Не указана'}</p>
                                                         <p style={{ margin: '0 0 8px 0' }}><b>Город проживания:</b> {resumeData.city || 'Не указан'}</p>
 
@@ -427,7 +426,53 @@ const EmployerDashboard = () => {
                                                             </p>
                                                         )}
 
-                                                        <p style={{ margin: '0', whiteSpace: 'pre-wrap' }}><b>О себе / Опыт работы:</b><br/>{resumeData.description || 'Описание отсутствует'}</p>
+                                                        {/* ИСПРАВЛЕНО: Теперь берем данные из .text вместо .description */}
+                                                        <p style={{ margin: '0 0 15px 0', whiteSpace: 'pre-wrap' }}>
+                                                            <b>О себе / Опыт работы:</b><br/>
+                                                            {resumeData.text || 'Описание отсутствует'}
+                                                        </p>
+
+                                                        {/* БЛОК ИНТЕГРИРОВАННОГО ПРОСМОТРА PDF ФАЙЛА С АЛЬТЕРНАТИВНЫМ ПЛЕЕРОМ */}
+                                                        {resumeData.file_url ? (
+                                                            <div style={{ borderTop: '1px dashed #ddd', paddingTop: '15px', marginTop: '10px' }}>
+                                                                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '10px' }}>
+                                                                    <b>📄 Прикрепленный PDF-файл:</b>
+
+                                                                    <a
+                                                                        href={resumeData.file_url}
+                                                                        download={`Resume_ID_${app.resume_id}.pdf`}
+                                                                        style={{
+                                                                            color: '#FFF',
+                                                                            backgroundColor: '#17A2B8',
+                                                                            padding: '5px 10px',
+                                                                            borderRadius: '4px',
+                                                                            fontSize: '13px',
+                                                                            textDecoration: 'none',
+                                                                            fontWeight: 'bold'
+                                                                        }}
+                                                                    >
+                                                                        📥 Скачать резюме
+                                                                    </a>
+                                                                </div>
+
+                                                                {/* ИСПОЛЬЗУЕМ GOOGLE VIEWER КАК ПЛЕЕР ДЛЯ PDF ВНУТРИ IFRAME */}
+                                                                <iframe
+                                                                    src={`https://docs.google.com/gview?url=${encodeURIComponent(resumeData.file_url)}&embedded=true`}
+                                                                    title="Просмотр резюме"
+                                                                    style={{
+                                                                        width: '100%',
+                                                                        height: '600px',
+                                                                        border: '1px solid #ccc',
+                                                                        borderRadius: '4px',
+                                                                        backgroundColor: '#fafafa'
+                                                                    }}
+                                                                />
+                                                            </div>
+                                                        ) : (
+                                                            <p style={{ fontSize: '12px', color: '#999', margin: '10px 0 0 0', fontStyle: 'italic' }}>
+                                                                📎 Файл к резюме не прикреплен
+                                                            </p>
+                                                        )}
                                                     </div>
                                                 )}
                                             </div>
