@@ -60,11 +60,10 @@ const EmployerDashboard = () => {
     useEffect(() => {
         if (!hasCompany) return;
 
-        if (activeTab === 'my_vacancies') {
+        // Подгружаем вакансии как для активной вкладки, так и для архива
+        if (activeTab === 'my_vacancies' || activeTab === 'archived_vacancies') {
             API.get('/jobs/company/my/vacancies')
                 .then(res => {
-                    // ОТЛАДКА: смотрим в консоль браузера
-                    console.log("ВАКАНСИИ МОЕЙ КОМПАНИИ:", res.data);
                     setMyVacancies(res.data);
                 })
                 .catch(err => {
@@ -169,7 +168,7 @@ const EmployerDashboard = () => {
     };
 
     const handleRejectApplication = async (appId) => {
-        if (!window.confirm('Вы уверены, что хотите отказать этому соискателю?')) return;
+        if (!window.confirm('Вы уверены, что хотите закрыть резюме искателя?')) return;
 
         try {
             // Отправляем PATCH запрос на бэкенд для обновления статуса
@@ -183,7 +182,7 @@ const EmployerDashboard = () => {
                 prevApps.map(app => app.id === appId ? { ...app, status: response.data.status } : app)
             );
 
-            alert('Статус отклика изменен на "Отклонено"');
+            alert('Статус отклика изменен на "Закрыт"');
         } catch (err) {
             console.error("Ошибка при изменении статуса:", err);
             alert('Не удалось изменить статус отклика.');
@@ -207,6 +206,28 @@ const EmployerDashboard = () => {
         } catch (err) {
             console.error("Ошибка при загрузке резюме:", err);
             alert("Не удалось загрузить данные резюме.");
+        }
+    };
+
+    const handleCloseVacancy = async (vacancyId) => {
+        if (!window.confirm('Вы уверены, что хотите закрыть эту вакансию и перенести её в архив?')) return;
+
+        try {
+            // Отправляем PATCH или PUT запрос на бэкенд для смены статуса вакансии
+            // Проверь, как в твоей моделиVacancy называется статус (обычно 'closed' или 'archived')
+            const response = await API.patch(`/jobs/vacancies/${vacancyId}/status`, {
+                status: 'closed'
+            });
+
+            // Обновляем состояние локально, чтобы интерфейс сразу перерисовывался
+            setMyVacancies(prevVacancies =>
+                prevVacancies.map(vac => vac.id === vacancyId ? { ...vac, status: response.data.status } : vac)
+            );
+
+            alert('Вакансия успешно закрыта и перемещена в архив.');
+        } catch (err) {
+            console.error("Ошибка при закрытии вакансии:", err);
+            alert('Не удалось закрыть вакансию.');
         }
     };
 
@@ -237,6 +258,7 @@ const EmployerDashboard = () => {
                     <button onClick={() => { setActiveTab('my_vacancies'); setMessage(''); }} style={{ padding: '10px 15px', backgroundColor: activeTab === 'my_vacancies' ? '#007BFF' : '#E2E6EA', color: activeTab === 'my_vacancies' ? 'white' : 'black', border: 'none', borderRadius: '4px', cursor: 'pointer' }}>📋 Мои вакансии</button>
                     <button onClick={() => { setActiveTab('applications'); setMessage(''); }} style={{ padding: '10px 15px', backgroundColor: activeTab === 'applications' ? '#007BFF' : '#E2E6EA', color: activeTab === 'applications' ? 'white' : 'black', border: 'none', borderRadius: '4px', cursor: 'pointer' }}>📨 Отклики соискателей</button>
                     <button onClick={() => { setActiveTab('archive'); setMessage(''); }} style={{ padding: '10px 15px', backgroundColor: activeTab === 'archive' ? '#6C757D' : '#E2E6EA', color: activeTab === 'archive' ? 'white' : 'black', border: 'none', borderRadius: '4px', cursor: 'pointer' }}>📁 Архив</button>
+                    <button onClick={() => setActiveTab('archived_vacancies')} style={{ padding: '10px', textAlign: 'left', backgroundColor: activeTab === 'archived_vacancies' ? '#6C757D' : 'transparent', color: activeTab === 'archived_vacancies' ? 'white' : '#333', border: 'none', borderRadius: '4px', cursor: 'pointer', fontWeight: 'bold' }}>📁 Архив вакансий</button>
                 </div>
             )}
 
@@ -306,40 +328,63 @@ const EmployerDashboard = () => {
                 </form>
             )}
 
-            {/* ВКЛАДКА 3: МОИ ВАКАНСИИ */}
+            {/* ВЫВОД АКТИВНЫХ ВАКАНСИЙ */}
             {activeTab === 'my_vacancies' && (
                 <div>
-                    <h3>Размещенные вакансии</h3>
-                    {myVacancies.length === 0 ? (
-                        <p style={{ color: '#666' }}>Вы еще не опубликовали ни одной вакансии.</p>
+                    <h3>Размещенные вакансии (Активные)</h3>
+                    {myVacancies.filter(vac => vac.status !== 'closed').length === 0 ? (
+                        <p style={{ color: '#666', fontStyle: 'italic' }}>Нет активных вакансий.</p>
                     ) : (
                         <div style={{ display: 'flex', flexDirection: 'column', gap: '15px' }}>
-                            {myVacancies.map((vac) => {
-                                // Логика форматирования зарплаты из полей БД
+                            {myVacancies.filter(vac => vac.status !== 'closed').map((vac) => {
                                 let salaryText = 'По договоренности';
-                                if (vac.salary_min && vac.salary_max) {
-                                    salaryText = `${vac.salary_min} – ${vac.salary_max} руб.`;
-                                } else if (vac.salary_min) {
-                                    salaryText = `от ${vac.salary_min} руб.`;
-                                } else if (vac.salary_max) {
-                                    salaryText = `до ${vac.salary_max} руб.`;
-                                }
+                                if (vac.salary_min && vac.salary_max) salaryText = `${vac.salary_min} – ${vac.salary_max} руб.`;
+                                else if (vac.salary_min) salaryText = `от ${vac.salary_min} руб.`;
+                                else if (vac.salary_max) salaryText = `до ${vac.salary_max} руб.`;
 
                                 return (
-                                    <div key={vac.id} style={{ padding: '15px', border: '1px solid #e0e0e0', borderRadius: '6px', backgroundColor: '#fff' }}>
-                                        <h4 style={{ margin: '0 0 10px 0', color: '#007BFF' }}>{vac.title}</h4>
-                                        <p style={{ margin: '0 0 5px 0' }}><b>Город:</b> {vac.city || 'Не указан'}</p>
+                                    <div key={vac.id} style={{ padding: '15px', border: '1px solid #e0e0e0', borderRadius: '6px', backgroundColor: '#fff', display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start' }}>
+                                        <div style={{ flex: 1 }}>
+                                            <h4 style={{ margin: '0 0 10px 0', color: '#007BFF' }}>{vac.title}</h4>
+                                            <p style={{ margin: '0 0 5px 0' }}><b>Город:</b> {vac.city || 'Не указан'}</p>
+                                            <p style={{ margin: '0 0 10px 0' }}><b>Зарплата:</b> {salaryText}</p>
+                                            <p style={{ color: '#444', fontSize: '14px', whiteSpace: 'pre-wrap', margin: '0' }}>{vac.description}</p>
+                                        </div>
 
-                                        {/* Выводим сформированный текст зарплаты */}
-                                        <p style={{ margin: '0 0 10px 0' }}><b>Зарплата:</b> {salaryText}</p>
+                                        <button
+                                            onClick={() => handleCloseVacancy(vac.id)}
+                                            style={{ padding: '8px 12px', backgroundColor: '#DC3545', color: 'white', border: 'none', borderRadius: '4px', cursor: 'pointer', fontWeight: 'bold', marginLeft: '15px' }}
+                                        >
+                                            🔒 Закрыть вакансию
+                                        </button>
+                                    </div>
+                                );
+                            })}
+                        </div>
+                    )}
+                </div>
+            )}
 
-                                        {/* Если у вакансии есть навыки, выведем и их для красоты */}
-                                        {vac.skills && vac.skills.length > 0 && (
-                                            <p style={{ margin: '0 0 10px 0', fontSize: '13px' }}>
-                                                <b>Навыки:</b> {vac.skills.join(', ')}
-                                            </p>
-                                        )}
-                                        <p style={{ color: '#444', fontSize: '14px', whiteSpace: 'pre-wrap', margin: '0' }}>{vac.description}</p>
+            {/* ВЫВОД АРХИВА ВАКАНСИЙ (ОТДЕЛЬНАЯ ВКЛАДКА) */}
+            {activeTab === 'archived_vacancies' && (
+                <div>
+                    <h3 style={{ color: '#6C757D' }}>📁 Архив закрытых вакансий</h3>
+                    {myVacancies.filter(vac => vac.status === 'closed').length === 0 ? (
+                        <p style={{ color: '#999', fontStyle: 'italic' }}>Архив вакансий пуст.</p>
+                    ) : (
+                        <div style={{ display: 'flex', flexDirection: 'column', gap: '15px' }}>
+                            {myVacancies.filter(vac => vac.status === 'closed').map((vac) => {
+                                let salaryText = 'По договоренности';
+                                if (vac.salary_min && vac.salary_max) salaryText = `${vac.salary_min} – ${vac.salary_max} руб.`;
+                                else if (vac.salary_min) salaryText = `от ${vac.salary_min} руб.`;
+                                else if (vac.salary_max) salaryText = `до ${vac.salary_max} руб.`;
+
+                                return (
+                                    <div key={vac.id} style={{ padding: '15px', border: '1px solid #ddd', borderRadius: '6px', backgroundColor: '#F8F9FA' }}>
+                                        <h4 style={{ margin: '0 0 10px 0', color: '#6C757D' }}>{vac.title} (Закрыта)</h4>
+                                        <p style={{ margin: '0 0 5px 0', fontSize: '13px' }}><b>Город:</b> {vac.city || 'Не указан'}</p>
+                                        <p style={{ margin: '0 0 10px 0', fontSize: '13px' }}><b>Зарплата:</b> {salaryText}</p>
+                                        <p style={{ color: '#666', fontSize: '13px', whiteSpace: 'pre-wrap', margin: '0' }}>{vac.description}</p>
                                     </div>
                                 );
                             })}
@@ -379,7 +424,7 @@ const EmployerDashboard = () => {
                                                     {isChatOpen ? '❌ Закрыть' : '💬 Связаться'}
                                                 </button>
                                                 <button onClick={() => handleRejectApplication(app.id)} style={{ padding: '8px 12px', backgroundColor: '#6C757D', color: 'white', border: 'none', borderRadius: '4px', cursor: 'pointer', fontWeight: 'bold' }}>
-                                                    🙅‍♂️ Отказать
+                                                    ️ Закрыть
                                                 </button>
                                             </div>
                                         </div>
@@ -455,18 +500,18 @@ const EmployerDashboard = () => {
                                                                     </a>
                                                                 </div>
 
-                                                                {/* ИСПОЛЬЗУЕМ GOOGLE VIEWER КАК ПЛЕЕР ДЛЯ PDF ВНУТРИ IFRAME */}
-                                                                <iframe
-                                                                    src={`https://docs.google.com/gview?url=${encodeURIComponent(resumeData.file_url)}&embedded=true`}
-                                                                    title="Просмотр резюме"
-                                                                    style={{
-                                                                        width: '100%',
-                                                                        height: '600px',
-                                                                        border: '1px solid #ccc',
-                                                                        borderRadius: '4px',
-                                                                        backgroundColor: '#fafafa'
-                                                                    }}
-                                                                />
+                                                                {/*/!* ИСПОЛЬЗУЕМ GOOGLE VIEWER КАК ПЛЕЕР ДЛЯ PDF ВНУТРИ IFRAME *!/*/}
+                                                                {/*<iframe*/}
+                                                                {/*    src={`https://docs.google.com/gview?url=${encodeURIComponent(resumeData.file_url)}&embedded=true`}*/}
+                                                                {/*    title="Просмотр резюме"*/}
+                                                                {/*    style={{*/}
+                                                                {/*        width: '100%',*/}
+                                                                {/*        height: '600px',*/}
+                                                                {/*        border: '1px solid #ccc',*/}
+                                                                {/*        borderRadius: '4px',*/}
+                                                                {/*        backgroundColor: '#fafafa'*/}
+                                                                {/*    }}*/}
+                                                                {/*/>*/}
                                                             </div>
                                                         ) : (
                                                             <p style={{ fontSize: '12px', color: '#999', margin: '10px 0 0 0', fontStyle: 'italic' }}>
