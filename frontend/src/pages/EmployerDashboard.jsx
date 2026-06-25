@@ -257,8 +257,8 @@ const EmployerDashboard = () => {
                     <button onClick={() => { setActiveTab('create_vacancy'); setMessage(''); }} style={{ padding: '10px 15px', backgroundColor: activeTab === 'create_vacancy' ? '#007BFF' : '#E2E6EA', color: activeTab === 'create_vacancy' ? 'white' : 'black', border: 'none', borderRadius: '4px', cursor: 'pointer' }}>➕ Создать вакансию</button>
                     <button onClick={() => { setActiveTab('my_vacancies'); setMessage(''); }} style={{ padding: '10px 15px', backgroundColor: activeTab === 'my_vacancies' ? '#007BFF' : '#E2E6EA', color: activeTab === 'my_vacancies' ? 'white' : 'black', border: 'none', borderRadius: '4px', cursor: 'pointer' }}>📋 Мои вакансии</button>
                     <button onClick={() => { setActiveTab('applications'); setMessage(''); }} style={{ padding: '10px 15px', backgroundColor: activeTab === 'applications' ? '#007BFF' : '#E2E6EA', color: activeTab === 'applications' ? 'white' : 'black', border: 'none', borderRadius: '4px', cursor: 'pointer' }}>📨 Отклики соискателей</button>
-                    <button onClick={() => { setActiveTab('archive'); setMessage(''); }} style={{ padding: '10px 15px', backgroundColor: activeTab === 'archive' ? '#6C757D' : '#E2E6EA', color: activeTab === 'archive' ? 'white' : 'black', border: 'none', borderRadius: '4px', cursor: 'pointer' }}>📁 Архив</button>
-                    <button onClick={() => setActiveTab('archived_vacancies')} style={{ padding: '10px', textAlign: 'left', backgroundColor: activeTab === 'archived_vacancies' ? '#6C757D' : 'transparent', color: activeTab === 'archived_vacancies' ? 'white' : '#333', border: 'none', borderRadius: '4px', cursor: 'pointer', fontWeight: 'bold' }}>📁 Архив вакансий</button>
+                    <button onClick={() => { setActiveTab('archive'); setMessage(''); }} style={{ padding: '10px 15px', backgroundColor: activeTab === 'archive' ? '#007BFF' : '#E2E6EA', color: activeTab === 'archive' ? 'white' : 'black', border: 'none', borderRadius: '4px', cursor: 'pointer' }}>📁 Архив резюме</button>
+                    <button onClick={() => setActiveTab('archived_vacancies')} style={{ padding: '10px', textAlign: 'left', backgroundColor: activeTab === 'archived_vacancies' ? '#007BFF' : '#E2E6EA', color: activeTab === 'archived_vacancies' ? 'white' : '#333', border: 'none', borderRadius: '4px', cursor: 'pointer', fontWeight: 'bold' }}>📁 Архив вакансий</button>
                 </div>
             )}
 
@@ -462,8 +462,9 @@ const EmployerDashboard = () => {
                                                     <p style={{ fontSize: '13px', color: '#666', fontStyle: 'italic' }}>Загрузка данных резюме...</p>
                                                 ) : (
                                                     <div style={{ backgroundColor: '#fff', padding: '15px', borderRadius: '4px', border: '1px solid #dee2e6' }}>
+                                                        {/* Читаем всё строго из объекта resumeData */}
                                                         <p style={{ margin: '0 0 8px 0' }}><b>Желаемая должность:</b> {resumeData.title || 'Не указана'}</p>
-                                                        <p style={{ margin: '0 0 8px 0' }}><b>Город проживания:</b> {resumeData.city || 'Не указан'}</p>
+                                                        {/*<p style={{ margin: '0 0 8px 0' }}><b>Город проживания:</b> {resumeData.city || 'Не указан'}</p>*/}
 
                                                         {resumeData.skills && resumeData.skills.length > 0 && (
                                                             <p style={{ margin: '0 0 8px 0' }}>
@@ -471,18 +472,17 @@ const EmployerDashboard = () => {
                                                             </p>
                                                         )}
 
-                                                        {/* ИСПРАВЛЕНО: Теперь берем данные из .text вместо .description */}
+                                                        {/* ИСПРАВЛЕНО: Читаем текст "О себе" из загруженного resumeData.text */}
                                                         <p style={{ margin: '0 0 15px 0', whiteSpace: 'pre-wrap' }}>
                                                             <b>О себе / Опыт работы:</b><br/>
-                                                            {resumeData.text || 'Описание отсутствует'}
+                                                            {resumeData.experience || 'Описание отсутствует'}
                                                         </p>
 
-                                                        {/* БЛОК ИНТЕГРИРОВАННОГО ПРОСМОТРА PDF ФАЙЛА С АЛЬТЕРНАТИВНЫМ ПЛЕЕРОМ */}
+                                                        {/* Кнопка скачивания файла резюме */}
                                                         {resumeData.file_url ? (
                                                             <div style={{ borderTop: '1px dashed #ddd', paddingTop: '15px', marginTop: '10px' }}>
-                                                                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '10px' }}>
+                                                                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
                                                                     <b>📄 Прикрепленный PDF-файл:</b>
-
                                                                     <a
                                                                         href={resumeData.file_url}
                                                                         download={`Resume_ID_${app.resume_id}.pdf`}
@@ -533,7 +533,7 @@ const EmployerDashboard = () => {
             {/* ВЫДЕЛЕННАЯ ВКЛАДКА 5: АРХИВ */}
             {activeTab === 'archive' && (
                 <div>
-                    <h3>📁 Архив (Отклоненные отклики)</h3>
+                    <h3>📁 Архив  (Отклоненные отклики)</h3>
                     {applications.filter(app => app.status === 'rejected').length === 0 ? (
                         <p style={{ color: '#999', fontStyle: 'italic' }}>Архив пуст.</p>
                     ) : (
