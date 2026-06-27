@@ -6,12 +6,16 @@ import Dashboard from './pages/Dashboard';
 import ProtectedRoute from './components/ProtectedRoute'; // Импортируем защитника
 import Vacancies from './pages/Vacancies';
 import EmployerDashboard from './pages/EmployerDashboard'; // Импорт панели работодателя
+import Home from './pages/Home';
+import { ToastContainer } from 'react-toastify';
+import 'react-toastify/dist/ReactToastify.css';
 
 function App() {
     return (
         <Router>
             <div className="App">
                 <Routes>
+
                     {/* Публичные маршруты */}
                     <Route path="/login" element={<Login />} />
                     <Route path="/register" element={<Register />} />
@@ -49,7 +53,20 @@ function App() {
                     {/* Дефолтный редирект. Если пользователь авторизован, ProtectedRoute
                         сам разберется, но если ввести несуществующий адрес, кинет на /login или /dashboard */}
                     <Route path="*" element={<Navigate to="/login" replace />} />
+                    <Route path="/" element={<Home />} />
                 </Routes>
+                <ToastContainer
+                    position="top-right"
+                    autoClose={4000}
+                    hideProgressBar={false}
+                    newestOnTop={false}
+                    closeOnClick
+                    rtl={false}
+                    pauseOnFocusLoss
+                    draggable
+                    pauseOnHover
+                    theme="dark" /* Жестко задаем темную тему */
+                />
             </div>
         </Router>
     );
